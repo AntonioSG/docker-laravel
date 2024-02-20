@@ -1,0 +1,71 @@
+version: '3'
+services:
+  laravel:
+    container_name: gipback
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '8000:80'
+#    volumes:
+#      - .:/var/www
+#      - vendor:/var/www/vendor
+    networks:
+      - gip
+    # command: php artisan migrate --seed
+    depends_on:
+      - mariadb
+
+  mariadb:
+    container_name: ${DB_HOST}
+    restart: unless-stopped
+    image: 'mariadb'
+    ports:
+      - '${DB_PORT:-3306}:${DB_PORT:-3306}'
+    environment:
+      MARIADB_DATABASE: DB_HOST'${DB_DATABASE}'
+      MARIADB_USER: '${DB_USERNAME}'
+      MARIADB_PASSWORD: '${DB_PASSWORD}'
+      MARIADB_RANDOM_ROOT_PASSWORD: 1
+    volumes:
+      - ./db/files:/var/lib/mysql
+    networks:
+      - gip
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - '-p${DB_PASSWORD}'
+      retries: 3
+      timeout: 5s
+  frontend:
+    container_name: gipfront
+    restart: always
+    image: juanfran21/iestablero
+    ports:
+      - '80:80'
+    networks:
+      - gip
+    depends_on:
+      - laravel
+  # phpmyadmin:
+  #   container_name: phpmyadmin
+  #   restart: always
+  #   image: phpmyadmin
+  #   ports:
+  #     - '${PHPMYADMIN_PORT:-8001}:80'
+  #   environment:
+  #     - PMA_HOST=mysql
+  #   networks:
+  #     - sail
+  #   depends_on:
+  #     - mysql
+networks:
+  gip:
+    driver: bridge
+# volumes:
+  # sail-mysql:
+  #   driver: local
+  # vendor: {}
